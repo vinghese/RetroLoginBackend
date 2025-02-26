@@ -48,17 +48,19 @@ app.get('/', (req, res) => {
 });
 
 //add GetNotes route to the backend
-app.post('/api/users', multer().none(), async (request, response) => {
+app.post('/api/register', multer().none(), async (request, response) => {
 
     console.log("/api/users")
     console.log(request.body)
     const res = await AddUser(request.body)
-    console.log("result", res)
-    response.json(res);
+    const mongResp = MongoAuthResponse.from({ success: true, message: res.email })
+    console.log("Register", mongResp)
+    response.json(mongResp);
 
 })
 
-const User = require("./user")
+const User = require("./user");
+const MongoAuthResponse = require("./MongoAuthResponse");
 
 async function AddUser(userModel) {
 
@@ -74,20 +76,36 @@ async function AddUser(userModel) {
 
 }
 
-async function GetUsers() {
+async function GetUsers(userModel) {
 
-    const users = await User.find({});
-    console.log("Add user saved Object", users.toString());
-    return users.map(x => x.toObject());
+    let user = new User({
+        ...userModel
+    });
+    const users = await User.findOne({ email: user.email, password: user.password });
+    console.log("Find User", users._id);
+    return users.toJSON();
 
 }
 
+app.post('/api/login', multer().none(), async (request, response) => {
+
+    console.log("request.body", request.body)
+    const res = await GetUsers(request.body)
+    const id = res._id.toString()
+    console.log("From Login", id)
+    const mongResp = MongoAuthResponse.from({ success: true, message: id })
+    response.json(mongResp);
+
+})
 
 app.get('/api/users', multer().none(), async (request, response) => {
 
-    const res = await GetUsers()
-    console.log("users", res)
-    response.json(res);
+    console.log("request.body", request.body)
+    const res = await GetUsers(request.body)
+    const email = res.email
+    console.log("Register Users", id)
+    const mongResp = MongoAuthResponse.from({ success: true, message: email })
+    response.json(mongResp);
 
 })
 
